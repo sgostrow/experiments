@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Golden Hour Gratitude</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@300;400;500;600&display=swap');
+
+    /* ── Reset & Base ──────────────────────────────────── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --terracotta:   #E07A5F;
+      --terracotta-d: #C4613F;
+      --teal:         #2A9D8F;
+      --teal-light:   #3DBAA9;
+      --sky:          #89C2D9;
+      --sky-light:    #B6DCED;
+      --sand:         #F2CC8F;
+      --sand-light:   #F9E4BE;
+      --cream:        #FDF8F0;
+      --charcoal:     #264653;
+      --charcoal-50:  rgba(38,70,83,.5);
+      --white:        #FFFFFF;
+      --radius:       16px;
+      --radius-sm:    10px;
+      --shadow:       0 4px 24px rgba(38,70,83,.08);
+      --shadow-lg:    0 8px 40px rgba(38,70,83,.12);
+      --transition:   .3s cubic-bezier(.4,0,.2,1);
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--cream);
+      color: var(--charcoal);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* ── Decorative Background ─────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 10% 15%, rgba(224,122,95,.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 85% 80%, rgba(42,157,143,.10) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 40% at 50% 5%, rgba(137,194,217,.10) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Header ────────────────────────────────────────── */
+    .header {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      padding: 40px 20px 12px;
+    }
+    .header h1 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: clamp(1.75rem, 5vw, 2.5rem);
+      color: var(--charcoal);
+      letter-spacing: -.02em;
+    }
+    .header h1 span { color: var(--terracotta); }
+    .header p {
+      margin-top: 6px;
+      font-size: .9rem;
+      font-weight: 300;
+      color: var(--charcoal-50);
+    }
+
+    /* ── Tab Bar ───────────────────────────────────────── */
+    .tab-bar {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      padding: 6px 20px 0;
+    }
+    .tab-btn {
+      position: relative;
+      background: none;
+      border: none;
+      font-family: 'Inter', sans-serif;
+      font-size: .9rem;
+      font-weight: 500;
+      color: var(--charcoal-50);
+      padding: 10px 24px;
+      cursor: pointer;
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      transition: color var(--transition), background var(--transition);
+    }
+    .tab-btn:hover { color: var(--charcoal); }
+    .tab-btn.active {
+      color: var(--terracotta);
+      background: var(--white);
+    }
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 20%; right: 20%;
+      height: 3px;
+      border-radius: 3px 3px 0 0;
+      background: linear-gradient(90deg, var(--terracotta), var(--sand));
+    }
+
+    /* ── Tab Indicator Dot ─────────────────────────────── */
+    .tab-btn .dot {
+      display: inline-block;
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      margin-left: 6px;
+      vertical-align: middle;
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+    .tab-btn.active .dot { opacity: 1; }
+    .tab-btn[data-tab="today"] .dot    { background: var(--teal); }
+    .tab-btn[data-tab="journal"] .dot  { background: var(--sky); }
+
+    /* ── Main Container ────────────────────────────────── */
+    .main {
+      position: relative;
+      z-index: 2;
+      flex: 1;
+      max-width: 780px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 20px 40px;
+    }
+
+    /* ── Panels ────────────────────────────────────────── */
+    .panel {
+      display: none;
+      animation: fadeUp .4s ease;
+    }
+    .panel.active { display: block; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Today Panel ───────────────────────────────────── */
+    .today-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 40px 32px;
+      text-align: center;
+      margin-top: 8px;
+    }
+    .today-card .icon {
+      width: 64px; height: 64px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--sand-light), var(--terracotta));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      box-shadow: 0 4px 16px rgba(224,122,95,.25);
+    }
+    .today-card h2 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 1.5rem;
+      margin-bottom: 6px;
+    }
+    .today-card .date-line {
+      font-size: .82rem;
+      color: var(--charcoal-50);
+      margin-bottom: 28px;
+    }
+    .input-wrap {
+      position: relative;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+    .input-wrap textarea {
+      width: 100%;
+      min-height: 120px;
+      border: 2px solid transparent;
+      border-radius: var(--radius-sm);
+      background: var(--cream);
+      padding: 16px 18px;
+      font-family: 'Inter', sans-serif;
+      font-size: .95rem;
+      line-height: 1.6;
+      color: var(--charcoal);
+      resize: vertical;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .input-wrap textarea::placeholder {
+      color: rgba(38,70,83,.32);
+      font-style: italic;
+    }
+    .input-wrap textarea:focus {
+      outline: none;
+      border-color: var(--teal-light);
+      box-shadow: 0 0 0 4px rgba(42,157,143,.12);
+    }
+    .char-count {
+      text-align: right;
+      font-size: .75rem;
+      color: var(--charcoal-50);
+      margin-top: 4px;
+    }
+
+    .save-btn {
+      margin-top: 20px;
+      border: none;
+      background: linear-gradient(135deg, var(--terracotta), var(--terracotta-d));
+      color: var(--white);
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: .95rem;
+      padding: 14px 48px;
+      border-radius: 60px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(224,122,95,.30);
+      transition: transform var(--transition), box-shadow var(--transition), opacity var(--transition);
+    }
+    .save-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(224,122,95,.40);
+    }
+    .save-btn:active { transform: translateY(0); }
+    .save-btn:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* ── Already Logged State ──────────────────────────── */
+    .already-logged {
+      margin-top: 28px;
+      padding: 20px 24px;
+      background: linear-gradient(135deg, rgba(42,157,143,.06), rgba(137,194,217,.08));
+      border-radius: var(--radius-sm);
+      border-left: 4px solid var(--teal);
+    }
+    .already-logged p {
+      font-size: .88rem;
+      color: var(--charcoal);
+      line-height: 1.6;
+    }
+    .already-logged .label {
+      font-weight: 600;
+      color: var(--teal);
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 4px;
+    }
+
+    /* ── Success Toast ─────────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--charcoal);
+      color: var(--white);
+      padding: 14px 28px;
+      border-radius: 60px;
+      font-size: .88rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-lg);
+      opacity: 0;
+      transition: transform .5s cubic-bezier(.4,0,.2,1), opacity .5s ease;
+      z-index: 100;
+      pointer-events: none;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ── Journal Panel ─────────────────────────────────── */
+    .journal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 8px 0 20px;
+    }
+    .journal-header h2 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 1.35rem;
+    }
+    .entry-count {
+      font-size: .8rem;
+      font-weight: 500;
+      color: var(--white);
+      background: var(--teal);
+      padding: 4px 14px;
+      border-radius: 60px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--charcoal-50);
+    }
+    .empty-state .empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: .5;
+    }
+    .empty-state p { font-size: .95rem; line-height: 1.6; }
+
+    /* ── Entry Card ────────────────────────────────────── */
+    .entry-grid {
+      display: grid;
+      gap: 20px;
+    }
+
+    .entry-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      transition: transform var(--transition), box-shadow var(--transition);
+    }
+    .entry-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-lg);
+    }
+    .entry-card .art {
+      position: relative;
+      min-height: 140px;
+    }
+    .entry-card .art canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .entry-card .art .day-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255,255,255,.85);
+      backdrop-filter: blur(6px);
+      padding: 3px 10px;
+      border-radius: 40px;
+      font-size: .68rem;
+      font-weight: 600;
+      color: var(--charcoal);
+    }
+    .entry-card .body {
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .entry-card .entry-date {
+      font-size: .75rem;
+      font-weight: 600;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 6px;
+    }
+    .entry-card .entry-text {
+      font-size: .92rem;
+      line-height: 1.65;
+      color: var(--charcoal);
+    }
+    .entry-card .entry-time {
+      margin-top: 8px;
+      font-size: .72rem;
+      color: var(--charcoal-50);
+    }
+
+    /* Delete button */
+    .entry-card .delete-btn {
+      background: none;
+      border: none;
+      color: var(--charcoal-50);
+      cursor: pointer;
+      font-size: .75rem;
+      margin-top: 8px;
+      padding: 2px 0;
+      opacity: 0;
+      transition: opacity var(--transition), color var(--transition);
+      align-self: flex-start;
+    }
+    .entry-card:hover .delete-btn { opacity: 1; }
+    .entry-card .delete-btn:hover { color: var(--terracotta); }
+
+    /* ── Streak Banner ─────────────────────────────────── */
+    .streak-banner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding: 14px 20px;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, rgba(242,204,143,.25), rgba(224,122,95,.15));
+      font-size: .85rem;
+      font-weight: 500;
+      color: var(--charcoal);
+    }
+    .streak-banner .flame { font-size: 1.2rem; }
+
+    /* ── Responsive ────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .header { padding: 28px 16px 8px; }
+      .main { padding: 0 12px 32px; }
+      .today-card { padding: 28px 20px; }
+
+      .entry-card {
+        grid-template-columns: 1fr;
+      }
+      .entry-card .art { min-height: 120px; }
+      .entry-card .body { padding: 16px 18px; }
+      .tab-btn { padding: 10px 18px; font-size: .84rem; }
+    }
+
+    /* ── Scrollbar ──────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(38,70,83,.15);
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <h1>Golden <span>Hour</span> Gratitude</h1>
+    <p>A moment of reflection, every single day</p>
+  </header>
+
+  <!-- Tab Bar -->
+  <nav class="tab-bar">
+    <button class="tab-btn active" data-tab="today">
+      Today<span class="dot"></span>
+    </button>
+    <button class="tab-btn" data-tab="journal">
+      Journal<span class="dot"></span>
+    </button>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main">
+
+    <!-- ─── Today Panel ──────────────────── -->
+    <section class="panel active" id="panel-today">
+      <div class="today-card">
+        <div class="icon">&#9728;&#65039;</div>
+        <h2 id="prompt-heading">What are you grateful for today?</h2>
+        <p class="date-line" id="today-date"></p>
+
+        <div id="input-area">
+          <div class="input-wrap">
+            <textarea
+              id="gratitude-input"
+              placeholder="The warm morning light through the window..."
+              maxlength="500"
+            ></textarea>
+            <div class="char-count"><span id="char-count">0</span> / 500</div>
+          </div>
+          <button class="save-btn" id="save-btn" disabled>Save Gratitude</button>
+        </div>
+
+        <div id="logged-area" style="display:none;">
+          <div class="already-logged">
+            <p class="label">Today's Gratitude</p>
+            <p id="logged-text"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Journal Panel ────────────────── -->
+    <section class="panel" id="panel-journal">
+      <div class="journal-header">
+        <h2>My Gratitude Journal</h2>
+        <span class="entry-count" id="entry-count">0 entries</span>
+      </div>
+      <div id="streak-container"></div>
+      <div class="entry-grid" id="entry-grid"></div>
+      <div class="empty-state" id="empty-state" style="display:none;">
+        <div class="empty-icon">&#127796;</div>
+        <p>Your journal is waiting.<br>Start by sharing something you're grateful for today.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">Gratitude saved &hearts;</div>
+
+  <script>
+    /* =====================================================
+       Golden Hour Gratitude – App Logic
+       ===================================================== */
+
+    const LS_KEY = 'golden_hour_entries';
+
+    // ── Palette for generative art ──────────────────────
+    const PALETTES = [
+      ['#E07A5F','#F2CC8F','#89C2D9','#2A9D8F','#264653'],
+      ['#F4845F','#F7B267','#A8DADC','#457B9D','#1D3557'],
+      ['#E07A5F','#F2CC8F','#81B29A','#3D405B','#F4F1DE'],
+      ['#C97B5C','#D4A373','#8ECAE6','#219EBC','#023047'],
+      ['#E76F51','#F4A261','#E9C46A','#2A9D8F','#264653'],
+      ['#D4726A','#EBB984','#93C5C8','#5B8FA3','#3E4C59'],
+    ];
+
+    // ── DOM refs ────────────────────────────────────────
+    const $input       = document.getElementById('gratitude-input');
+    const $charCount   = document.getElementById('char-count');
+    const $saveBtn     = document.getElementById('save-btn');
+    const $inputArea   = document.getElementById('input-area');
+    const $loggedArea  = document.getElementById('logged-area');
+    const $loggedText  = document.getElementById('logged-text');
+    const $todayDate   = document.getElementById('today-date');
+    const $entryGrid   = document.getElementById('entry-grid');
+    const $entryCount  = document.getElementById('entry-count');
+    const $emptyState  = document.getElementById('empty-state');
+    const $streakCtn   = document.getElementById('streak-container');
+    const $toast       = document.getElementById('toast');
+    const tabBtns      = document.querySelectorAll('.tab-btn');
+    const panels       = document.querySelectorAll('.panel');
+
+    // ── Helpers ─────────────────────────────────────────
+    const todayKey = () => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    };
+
+    const formatDate = (iso) => {
+      const d = new Date(iso + 'T12:00:00');
+      return d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+    };
+
+    const formatDateShort = (iso) => {
+      const d = new Date(iso + 'T12:00:00');
+      return d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+    };
+
+    const loadEntries = () => {
+      try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; }
+      catch { return []; }
+    };
+
+    const saveEntries = (entries) => {
+      localStorage.setItem(LS_KEY, JSON.stringify(entries));
+    };
+
+    const showToast = (msg) => {
+      $toast.textContent = msg || 'Gratitude saved \u2665';
+      $toast.classList.add('show');
+      setTimeout(() => $toast.classList.remove('show'), 2600);
+    };
+
+    // ── Simple hash from string (for deterministic art) ──
+    const hashStr = (s) => {
+      let h = 0;
+      for (let i = 0; i < s.length; i++) {
+        h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+      }
+      return Math.abs(h);
+    };
+
+    // ── Generative gradient art on canvas ───────────────
+    const drawArt = (canvas, text, dateStr) => {
+      const seed = hashStr(text + dateStr);
+      const palette = PALETTES[seed % PALETTES.length];
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width = 300;
+      const H = canvas.height = 300;
+
+      // Background gradient
+      const bgAngle = (seed % 360) * Math.PI / 180;
+      const bgGrad = ctx.createLinearGradient(
+        W/2 + Math.cos(bgAngle)*W/2, H/2 + Math.sin(bgAngle)*H/2,
+        W/2 - Math.cos(bgAngle)*W/2, H/2 - Math.sin(bgAngle)*H/2
+      );
+      bgGrad.addColorStop(0, palette[0]);
+      bgGrad.addColorStop(0.5, palette[1]);
+      bgGrad.addColorStop(1, palette[2]);
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, W, H);
+
+      // Layered transparent circles / blobs
+      const pseudoRand = (i) => ((seed * (i + 1) * 9301 + 49297) % 233280) / 233280;
+
+      const numBlobs = 4 + (seed % 4);
+      for (let i = 0; i < numBlobs; i++) {
+        const x = pseudoRand(i * 3) * W;
+        const y = pseudoRand(i * 3 + 1) * H;
+        const r = 30 + pseudoRand(i * 3 + 2) * 90;
+        const color = palette[(i + 2) % palette.length];
+
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
+        grad.addColorStop(0, color + 'AA');
+        grad.addColorStop(0.6, color + '44');
+        grad.addColorStop(1, color + '00');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Mid-century geometric shapes
+      ctx.globalAlpha = 0.15;
+      const shapes = 2 + (seed % 3);
+      for (let i = 0; i < shapes; i++) {
+        const sx = pseudoRand(i * 5 + 10) * W;
+        const sy = pseudoRand(i * 5 + 11) * H;
+        const size = 20 + pseudoRand(i * 5 + 12) * 50;
+        ctx.fillStyle = palette[(i + 1) % palette.length];
+
+        const shapeType = Math.floor(pseudoRand(i * 5 + 13) * 3);
+        if (shapeType === 0) {
+          // Diamond
+          ctx.beginPath();
+          ctx.moveTo(sx, sy - size);
+          ctx.lineTo(sx + size * 0.6, sy);
+          ctx.lineTo(sx, sy + size);
+          ctx.lineTo(sx - size * 0.6, sy);
+          ctx.closePath();
+          ctx.fill();
+        } else if (shapeType === 1) {
+          // Circle ring
+          ctx.beginPath();
+          ctx.arc(sx, sy, size, 0, Math.PI * 2);
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = palette[(i + 3) % palette.length];
+          ctx.globalAlpha = 0.2;
+          ctx.stroke();
+          ctx.globalAlpha = 0.15;
+        } else {
+          // Rounded rectangle
+          const rr = size * 0.3;
+          ctx.beginPath();
+          ctx.roundRect(sx - size/2, sy - size/2, size, size, rr);
+          ctx.fill();
+        }
+      }
+      ctx.globalAlpha = 1;
+
+      // Subtle noise texture overlay
+      const imgData = ctx.getImageData(0, 0, W, H);
+      const data = imgData.data;
+      for (let p = 0; p < data.length; p += 4) {
+        const noise = (pseudoRand(p) - 0.5) * 18;
+        data[p]   += noise;
+        data[p+1] += noise;
+        data[p+2] += noise;
+      }
+      ctx.putImageData(imgData, 0, 0);
+    };
+
+    // ── Calculate streak ────────────────────────────────
+    const calcStreak = (entries) => {
+      if (!entries.length) return 0;
+      const sorted = [...entries].sort((a,b) => b.date.localeCompare(a.date));
+      let streak = 0;
+      const today = new Date();
+      today.setHours(0,0,0,0);
+
+      for (let i = 0; i < sorted.length; i++) {
+        const expected = new Date(today);
+        expected.setDate(expected.getDate() - i);
+        const expKey = `${expected.getFullYear()}-${String(expected.getMonth()+1).padStart(2,'0')}-${String(expected.getDate()).padStart(2,'0')}`;
+        if (sorted.find(e => e.date === expKey)) {
+          streak++;
+        } else {
+          break;
+        }
+      }
+      return streak;
+    };
+
+    // ── Render Today Panel ──────────────────────────────
+    const renderToday = () => {
+      const today = new Date();
+      $todayDate.textContent = today.toLocaleDateString('en-US', {
+        weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+      });
+
+      const entries = loadEntries();
+      const todayEntry = entries.find(e => e.date === todayKey());
+
+      if (todayEntry) {
+        $inputArea.style.display = 'none';
+        $loggedArea.style.display = 'block';
+        $loggedText.textContent = todayEntry.text;
+      } else {
+        $inputArea.style.display = '';
+        $loggedArea.style.display = 'none';
+        $input.value = '';
+        $charCount.textContent = '0';
+        $saveBtn.disabled = true;
+      }
+    };
+
+    // ── Render Journal Panel ────────────────────────────
+    const renderJournal = () => {
+      const entries = loadEntries();
+      const sorted = [...entries].sort((a,b) => b.date.localeCompare(a.date));
+      const count = sorted.length;
+
+      $entryCount.textContent = `${count} entr${count === 1 ? 'y' : 'ies'}`;
+
+      // Streak
+      const streak = calcStreak(entries);
+      if (streak >= 2) {
+        $streakCtn.innerHTML = `
+          <div class="streak-banner">
+            <span class="flame">&#128293;</span>
+            <span>${streak}-day streak! Keep the gratitude flowing.</span>
+          </div>`;
+      } else {
+        $streakCtn.innerHTML = '';
+      }
+
+      if (!count) {
+        $entryGrid.innerHTML = '';
+        $emptyState.style.display = '';
+        return;
+      }
+
+      $emptyState.style.display = 'none';
+      $entryGrid.innerHTML = '';
+
+      sorted.forEach((entry, idx) => {
+        const card = document.createElement('div');
+        card.className = 'entry-card';
+
+        const dayNum = count - idx;
+
+        card.innerHTML = `
+          <div class="art">
+            <canvas></canvas>
+            <span class="day-badge">Day ${dayNum}</span>
+          </div>
+          <div class="body">
+            <p class="entry-date">${formatDate(entry.date)}</p>
+            <p class="entry-text">${escapeHtml(entry.text)}</p>
+            <span class="entry-time">Logged at ${entry.time || '--'}</span>
+            <button class="delete-btn" data-date="${entry.date}">Remove</button>
+          </div>`;
+
+        $entryGrid.appendChild(card);
+
+        const canvas = card.querySelector('canvas');
+        drawArt(canvas, entry.text, entry.date);
+      });
+
+      // Delete handlers
+      $entryGrid.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const dateToRemove = e.target.dataset.date;
+          if (confirm('Remove this gratitude entry?')) {
+            const updated = loadEntries().filter(en => en.date !== dateToRemove);
+            saveEntries(updated);
+            renderJournal();
+            renderToday();
+          }
+        });
+      });
+    };
+
+    const escapeHtml = (str) =>
+      str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+    // ── Tab Switching ───────────────────────────────────
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabBtns.forEach(b => b.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+
+        if (btn.dataset.tab === 'journal') renderJournal();
+      });
+    });
+
+    // ── Input Events ────────────────────────────────────
+    $input.addEventListener('input', () => {
+      const len = $input.value.trim().length;
+      $charCount.textContent = $input.value.length;
+      $saveBtn.disabled = len === 0;
+    });
+
+    // ── Save Entry ──────────────────────────────────────
+    $saveBtn.addEventListener('click', () => {
+      const text = $input.value.trim();
+      if (!text) return;
+
+      const entries = loadEntries();
+      const now = new Date();
+      const time = now.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+
+      // Prevent duplicate for today
+      const existingIdx = entries.findIndex(e => e.date === todayKey());
+      if (existingIdx >= 0) {
+        entries[existingIdx].text = text;
+        entries[existingIdx].time = time;
+      } else {
+        entries.push({ date: todayKey(), text, time });
+      }
+
+      saveEntries(entries);
+      showToast();
+      renderToday();
+    });
+
+    // ── Init ────────────────────────────────────────────
+    renderToday();
+  </script>
+</body>
+</html>
