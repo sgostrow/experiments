@@ -428,6 +428,36 @@
       color: var(--charcoal-30);
       font-weight: 400;
     }
+    .footer-actions {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .footer-btn {
+      background: none;
+      border: 1px solid rgba(38,70,83,.12);
+      color: var(--charcoal-50);
+      font-family: 'Inter', sans-serif;
+      font-size: .76rem;
+      font-weight: 500;
+      padding: 6px 16px;
+      border-radius: 60px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all var(--transition);
+    }
+    .footer-btn:hover {
+      border-color: var(--teal);
+      color: var(--teal);
+    }
+    .footer-btn svg {
+      width: 13px; height: 13px;
+      fill: currentColor;
+    }
+    #import-file { display: none; }
 
     /* ── Toast ─────────────────────────────────────────── */
     .toast {
@@ -607,6 +637,17 @@
   <!-- Footer -->
   <footer class="app-footer">
     <p>Take time each day to appreciate the little things &#10024;</p>
+    <div class="footer-actions">
+      <button class="footer-btn" id="export-btn">
+        <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        Export journal
+      </button>
+      <button class="footer-btn" id="import-btn">
+        <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
+        Import backup
+      </button>
+      <input type="file" id="import-file" accept=".json">
+    </div>
   </footer>
 
   <!-- Toast -->
@@ -893,6 +934,61 @@
       saveEntries(entries);
       showToast();
       renderToday();
+    });
+
+    // ── Export / Import ────────────────────────────────
+    document.getElementById('export-btn').addEventListener('click', () => {
+      const entries = loadEntries();
+      if (!entries.length) {
+        showToast('No entries to export');
+        return;
+      }
+      const blob = new Blob([JSON.stringify(entries, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `gratitude-journal-${todayKey()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`Exported ${entries.length} entries`);
+    });
+
+    const $importFile = document.getElementById('import-file');
+    document.getElementById('import-btn').addEventListener('click', () => {
+      $importFile.click();
+    });
+
+    $importFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const imported = JSON.parse(ev.target.result);
+          if (!Array.isArray(imported)) throw new Error('Invalid format');
+          // Validate entries have required fields
+          const valid = imported.filter(e => e.date && e.text);
+          if (!valid.length) throw new Error('No valid entries found');
+          // Merge: imported entries fill in missing dates, don't overwrite existing
+          const existing = loadEntries();
+          const existingDates = new Set(existing.map(e => e.date));
+          let added = 0;
+          valid.forEach(entry => {
+            if (!existingDates.has(entry.date)) {
+              existing.push(entry);
+              added++;
+            }
+          });
+          saveEntries(existing);
+          showToast(`Imported ${added} new entries`);
+          renderToday();
+          renderJournal();
+        } catch (err) {
+          showToast('Invalid backup file');
+        }
+        $importFile.value = '';
+      };
+      reader.readAsText(file);
     });
 
     // ── Init ────────────────────────────────────────────
